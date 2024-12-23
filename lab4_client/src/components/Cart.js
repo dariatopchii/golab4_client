@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
+import PayPalButton from "./PayPalButton";
 
 function Cart({ user }) {
   const [cart, setCart] = useState(null);
@@ -36,26 +37,17 @@ function Cart({ user }) {
     }
   };
 
-  const handleCheckout = async () => {
-    try {
-      await axios.post(
-        "http://localhost:8080/checkout",
-        {},
-        {
-          headers: { "User-ID": user.id },
-        }
-      );
-      alert("Покупку завершено!");
-      loadCart();
-    } catch (error) {
-      console.error("Помилка під час оформлення покупки:", error);
-      alert("Не вдалося завершити покупку.");
-    }
-  };
-
   if (!cart) {
     return <div>Завантаження...</div>;
   }
+
+  if (cart.items.length === 0) {
+    return <div>Ваш кошик порожній</div>;
+  }
+
+  const totalAmount = cart.items
+    .reduce((sum, item) => sum + item.product.price * item.quantity, 0)
+    .toFixed(2);
 
   return (
     <div style={{ padding: "20px", maxWidth: "600px", margin: "auto" }}>
@@ -77,18 +69,25 @@ function Cart({ user }) {
             <img
               src={`images/${item.product.image_url}`}
               alt={item.product.name}
-              style={{ width: "50px", height: "50px", marginRight: "10px", borderRadius: "5px" }}
+              style={{
+                width: "50px",
+                height: "50px",
+                marginRight: "10px",
+                borderRadius: "5px",
+              }}
             />
             <div>
               <div style={{ fontWeight: "bold" }}>{item.product.name}</div>
-              <div>{item.product.price.toFixed(2)}₴</div>
+              <div>{item.product.price.toFixed(2)} USD</div>
             </div>
             <div>
               <input
                 type="number"
                 value={item.quantity}
                 min="1"
-                onChange={(e) => handleQuantityChange(item.product.id, parseInt(e.target.value, 10))}
+                onChange={(e) =>
+                  handleQuantityChange(item.product.id, parseInt(e.target.value, 10))
+                }
                 style={{
                   width: "60px",
                   padding: "5px",
@@ -101,26 +100,26 @@ function Cart({ user }) {
         ))}
       </ul>
       <h3 style={{ color: "red", textAlign: "center" }}>
-        Загальна сума:{" "}
-        {cart.items.reduce((sum, item) => sum + item.product.price * item.quantity, 0).toFixed(2)}₴
+        Загальна сума: {totalAmount} USD
       </h3>
-      {cart.items.length > 0 && (
-        <div style={{ textAlign: "center" }}>
-          <button
-            onClick={handleCheckout}
-            style={{
-              backgroundColor: "green",
-              color: "white",
-              padding: "10px 20px",
-              border: "none",
-              borderRadius: "5px",
-              cursor: "pointer",
-            }}
-          >
-            Оформити замовлення
-          </button>
-        </div>
-      )}
+      <PayPalButton totalAmount={totalAmount} user={user} />
+      <div
+        id="paypal-button-container"
+        style={{ position: "relative", textAlign: "center" }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: "0",
+            left: "0",
+            width: "100%",
+            height: "50%",
+            backgroundColor: "white",
+            zIndex: 1,
+            opacity: 0.9,
+          }}
+        ></div>
+      </div>
     </div>
   );
 }
